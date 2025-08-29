@@ -13,6 +13,7 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      text-align: center;
     }
 
     .container {
@@ -43,24 +44,65 @@
     #login:hover {
       background-color: #1ed760cc;
     }
+
+    #recent {
+      margin-top: 40px;
+      text-align: left;
+    }
+
+    #recent div {
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>AudioLog Tracker</h1>
     <button id="login">Login con Spotify</button>
+
+    <div id="recent"></div>
   </div>
 
   <script>
+    const client_id = "87ae440dcbbb40699c7b76dbda41a9da";
+    const redirect_uri = "https://oxy24.github.io/audiolog/callback.html";
+    const scope = "user-read-recently-played";
+
     const loginButton = document.getElementById('login');
+    const recentDiv = document.getElementById('recent');
 
     loginButton.addEventListener('click', () => {
-      const client_id = "87ae440dcbbb40699c7b76dbda41a9da";
-      const redirect_uri = "https://oxy24.github.io/audiolog/callback.html";
-      const scope = "user-read-recently-played";
       const auth_url = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}`;
       window.location = auth_url;
     });
+
+    // Se il token è già in localStorage, mostra i brani
+    const accessToken = localStorage.getItem('spotify_access_token');
+    if (accessToken) {
+      fetch("https://api.spotify.com/v1/me/player/recently-played?limit=10", {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.items && data.items.length > 0){
+          recentDiv.innerHTML = "<h2>Ultimi brani ascoltati:</h2>";
+          data.items.forEach(item => {
+            const track = item.track;
+            const div = document.createElement('div');
+            div.textContent = `${track.name} - ${track.artists.map(a => a.name).join(", ")}`;
+            recentDiv.appendChild(div);
+          });
+        } else {
+          recentDiv.innerHTML = "<p>Nessun brano trovato.</p>";
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        recentDiv.innerHTML = "<p>Errore nel recuperare i brani.</p>";
+      });
+    }
   </script>
 </body>
 </html>
