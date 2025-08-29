@@ -1,116 +1,172 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AudioLog - Spotify Tracker</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    h1 {
-      color: #1DB954;
-      margin-bottom: 30px;
-    }
-    button {
-      background-color: #1DB954;
-      border: none;
-      color: white;
-      padding: 15px 30px;
-      font-size: 18px;
-      border-radius: 25px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background-color: #1ed760cc;
-    }
-    .tracks {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
-      width: 100%;
-      max-width: 1000px;
-      margin-top: 30px;
-    }
-    .track {
-      background-color: #1e1e1e;
-      padding: 10px;
-      border-radius: 10px;
-      text-align: center;
-    }
-    .track img {
-      width: 100%;
-      border-radius: 10px;
-    }
-    .track-title {
-      font-weight: bold;
-      margin: 10px 0 5px;
-    }
-    .track-artist {
-      font-size: 0.9em;
-      color: #b3b3b3;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AudioLog Wrapped</title>
+<style>
+body {margin:0;font-family:Arial,sans-serif;background:#121212;color:#fff;padding:20px;}
+h1,h2{color:#1DB954;margin-bottom:15px;}
+button{background:#1DB954;border:none;color:#fff;padding:12px 25px;border-radius:25px;cursor:pointer;margin-bottom:20px;transition:0.3s;}
+button:hover{background:#1ed760cc;}
+.section{width:100%;max-width:1000px;margin-bottom:30px;}
+.currently-playing{display:flex;align-items:center;gap:15px;background:#1e1e1e;padding:15px;border-radius:12px;}
+.currently-playing img{width:80px;border-radius:8px;}
+.tracks{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;}
+.track{background:#1e1e1e;padding:8px;border-radius:10px;text-align:center;transition:transform 0.2s;}
+.track:hover{transform:scale(1.05);}
+.track img{width:100%;border-radius:8px;}
+.track-title{font-weight:bold;margin:8px 0 4px;color:#fff;}
+.track-artist{font-size:0.9em;color:#b3b3b3;}
+.stats {display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;}
+.stat-box{background:#1e1e1e;padding:15px;border-radius:12px;flex:1;min-width:200px;text-align:center;}
+.stat-box h3{margin:0 0 10px;color:#1DB954;}
+</style>
 </head>
 <body>
-  <h1>AudioLog</h1>
-  <button id="login-btn">Login con Spotify</button>
+<h1>AudioLog Wrapped</h1>
+<button id="login-btn">Login con Spotify</button>
 
-  <div class="tracks" id="tracks"></div>
+<div class="section currently-playing" id="current-track" style="display:none;"></div>
 
-  <script>
-    const loginBtn = document.getElementById('login-btn');
-    const tracksContainer = document.getElementById('tracks');
+<div class="section stats" id="summary-stats" style="display:none;">
+  <div class="stat-box" id="total-minutes"><h3>Minuti Ascoltati</h3><span>0</span></div>
+  <div class="stat-box" id="most-played-song"><h3>Canzone Più Ascoltata</h3><span>–</span></div>
+</div>
 
-    // URL backend Vercel
-    const vercelLoginUrl = 'https://audiolog-one.vercel.app/api/login';
+<div class="section" id="top-artists-section" style="display:none;">
+  <h2>Top 10 Artisti</h2>
+  <canvas id="top-artists-chart"></canvas>
+</div>
 
-    loginBtn.addEventListener('click', () => {
-      window.location.href = vercelLoginUrl;
-    });
+<div class="section" id="timeline-section" style="display:none;">
+  <h2>Timeline Brani Recenti</h2>
+  <canvas id="timeline-chart"></canvas>
+</div>
 
-    // Controlla se c'è access_token nell'URL
-    const hash = window.location.hash;
-    if (hash.includes('access_token')) {
-      const params = new URLSearchParams(hash.replace('#', '?'));
-      const access_token = params.get('access_token');
+<div class="section tracks" id="tracks"></div>
 
-      if (access_token) {
-        loginBtn.style.display = 'none';
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const loginBtn=document.getElementById('login-btn');
+const tracksContainer=document.getElementById('tracks');
+const currentTrackDiv=document.getElementById('current-track');
+const topArtistsSection=document.getElementById('top-artists-section');
+const timelineSection=document.getElementById('timeline-section');
+const summaryStats=document.getElementById('summary-stats');
+const topArtistsChartCtx=document.getElementById('top-artists-chart').getContext('2d');
+const timelineChartCtx=document.getElementById('timeline-chart').getContext('2d');
+const totalMinutesSpan=document.querySelector('#total-minutes span');
+const mostPlayedSongSpan=document.querySelector('#most-played-song span');
 
-        fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', {
-          headers: { 'Authorization': 'Bearer ' + access_token }
-        })
-        .then(res => res.json())
-        .then(data => {
-          tracksContainer.innerHTML = '';
-          data.items.forEach(item => {
-            const track = item.track;
-            const trackDiv = document.createElement('div');
-            trackDiv.classList.add('track');
-            trackDiv.innerHTML = `
-              <img src="${track.album.images[0].url}" alt="${track.name}">
-              <div class="track-title">${track.name}</div>
-              <div class="track-artist">${track.artists.map(a => a.name).join(', ')}</div>
-            `;
-            tracksContainer.appendChild(trackDiv);
-          });
-        })
-        .catch(err => {
-          tracksContainer.innerHTML = '<p>Errore nel recuperare i brani. Riprova.</p>';
-          console.error(err);
-        });
+const vercelLoginUrl='https://audiolog-one.vercel.app/api/login';
+loginBtn.addEventListener('click',()=>{window.location.href=vercelLoginUrl;});
+
+const hash=window.location.hash;
+if(hash.includes('access_token')){
+  const params=new URLSearchParams(hash.replace('#','?'));
+  const access_token=params.get('access_token');
+  if(access_token){
+    loginBtn.style.display='none';
+
+    // Currently Playing
+    fetch('https://api.spotify.com/v1/me/player/currently-playing',{
+      headers:{'Authorization':'Bearer '+access_token}
+    })
+    .then(res=>res.json())
+    .then(data=>{
+      if(data && data.item){
+        currentTrackDiv.style.display='flex';
+        const track=data.item;
+        currentTrackDiv.innerHTML=`
+          <img src="${track.album.images[0].url}" alt="${track.name}">
+          <div>
+            <strong>${track.name}</strong>
+            <span>${track.artists.map(a=>a.name).join(', ')}</span>
+            <span style="font-size:0.8em;color:#b3b3b3;">${track.album.name}</span>
+          </div>
+        `;
       }
-    }
-  </script>
+    }).catch(()=>console.log('Nessun brano attualmente in riproduzione.'));
+
+    let after=null;
+    let artistCounts={};
+    let songCounts={};
+    let timelineLabels=[];
+    let timelineData=[];
+    let totalMinutes=0;
+
+    const fetchTracks=()=>{
+      let url='https://api.spotify.com/v1/me/player/recently-played?limit=50';
+      if(after) url+='&after='+after;
+      fetch(url,{headers:{'Authorization':'Bearer '+access_token}})
+      .then(res=>res.json())
+      .then(data=>{
+        if(!data.items || data.items.length===0) return;
+
+        data.items.forEach(item=>{
+          const track=item.track;
+          const playedAt=new Date(item.played_at);
+          timelineLabels.push(playedAt.toLocaleString());
+          timelineData.push(track.name);
+
+          totalMinutes+=Math.floor(track.duration_ms/60000);
+
+          track.artists.forEach(a=>{artistCounts[a.name]=(artistCounts[a.name]||0)+1;});
+          songCounts[track.name]=(songCounts[track.name]||0)+1;
+
+          const trackDiv=document.createElement('div');
+          trackDiv.classList.add('track');
+          trackDiv.innerHTML=`
+            <img src="${track.album.images[0].url}" alt="${track.name}">
+            <div class="track-title">${track.name}</div>
+            <div class="track-artist">${track.artists.map(a=>a.name).join(', ')}</div>
+          `;
+          tracksContainer.appendChild(trackDiv);
+        });
+
+        // Top Artists
+        const sortedArtists=Object.entries(artistCounts).sort((a,b)=>b[1]-a[1]);
+        topArtistsSection.style.display='block';
+        new Chart(topArtistsChartCtx,{
+          type:'bar',
+          data:{
+            labels:sortedArtists.slice(0,10).map(e=>e[0]),
+            datasets:[{label:'Numero di brani', data:sortedArtists.slice(0,10).map(e=>e[1]), backgroundColor:'#1DB954'}]
+          },
+          options:{scales:{y:{beginAtZero:true}},plugins:{legend:{display:false}}}
+        });
+
+        // Timeline Chart
+        timelineSection.style.display='block';
+        new Chart(timelineChartCtx,{
+          type:'line',
+          data:{
+            labels:timelineLabels,
+            datasets:[{label:'Brano Ascoltato', data:timelineData.map((v,i)=>i+1), borderColor:'#1DB954', backgroundColor:'#1DB95433', fill:true, tension:0.3}]
+          },
+          options:{
+            responsive:true,
+            plugins:{legend:{display:false}},
+            scales:{x:{display:true,title:{display:true,text:'Data/Ora'}},y:{display:true,title:{display:true,text:'Ordine Brani'}}}
+          }
+        });
+
+        // Summary Stats
+        summaryStats.style.display='flex';
+        totalMinutesSpan.textContent=totalMinutes;
+        const sortedSongs=Object.entries(songCounts).sort((a,b)=>b[1]-a[1]);
+        mostPlayedSongSpan.textContent=sortedSongs[0] ? `${sortedSongs[0][0]} (${sortedSongs[0][1]} volte)` : '–';
+
+        // Scroll infinito
+        after=new Date(data.items[data.items.length-1].played_at).getTime();
+      }).catch(err=>console.error(err));
+    };
+
+    fetchTracks();
+    window.addEventListener('scroll',()=>{if((window.innerHeight+window.scrollY)>=document.body.offsetHeight-100) fetchTracks();});
+  }
+}
+</script>
 </body>
 </html>
