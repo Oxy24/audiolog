@@ -2,90 +2,114 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>AudioLog Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AudioLog - Spotify Tracker</title>
   <style>
-    body { margin:0; font-family:Arial,sans-serif; background:#121212; color:#fff; display:flex; flex-direction:column; align-items:center;}
-    header { background:#1DB954; padding:20px; font-size:2em; font-weight:bold; width:100%; text-align:center;}
-    .container { max-width:900px; margin:30px auto; padding:20px; background:#1E1E1E; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5); width:90%; }
-    #login { background:#1DB954; color:#fff; border:none; padding:15px 30px; font-size:1.2em; border-radius:25px; cursor:pointer; margin-bottom:30px; }
-    #login:hover { background:#1ed760cc; }
-    .track { display:flex; align-items:center; margin-bottom:15px; padding:10px; border-radius:10px; transition:0.2s; }
-    .track:hover { background:#2a2a2a; }
-    .cover { width:64px; height:64px; border-radius:5px; margin-right:15px; }
-    .info { display:flex; flex-direction:column; }
-    .track-name { font-weight:bold; color:#1DB954; }
-    .artist-album { font-size:0.9em; color:#ccc; }
-    @media(max-width:600px){ .track{flex-direction:column; align-items:flex-start;} .cover{margin-bottom:10px;} }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      color: #1DB954;
+      margin-bottom: 30px;
+    }
+    button {
+      background-color: #1DB954;
+      border: none;
+      color: white;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #1ed760cc;
+    }
+    .tracks {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+      margin-top: 30px;
+    }
+    .track {
+      background-color: #1e1e1e;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .track img {
+      width: 100%;
+      border-radius: 10px;
+    }
+    .track-title {
+      font-weight: bold;
+      margin: 10px 0 5px;
+    }
+    .track-artist {
+      font-size: 0.9em;
+      color: #b3b3b3;
+    }
   </style>
 </head>
 <body>
-  <header>AudioLog Dashboard</header>
-  <div class="container">
-    <button id="login">Login con Spotify</button>
-    <div id="recent"></div>
-  </div>
+  <h1>AudioLog</h1>
+  <button id="login-btn">Login con Spotify</button>
+
+  <div class="tracks" id="tracks"></div>
 
   <script>
-    const loginButton = document.getElementById('login');
-    const recentDiv = document.getElementById('recent');
+    const loginBtn = document.getElementById('login-btn');
+    const tracksContainer = document.getElementById('tracks');
 
-    const vercelLoginUrl = 'https://audiolog-one.vercel.app/login';
+    // URL backend Vercel
+    const vercelLoginUrl = 'https://audiolog-one.vercel.app/api/login';
 
-    loginButton.addEventListener('click', () => {
+    loginBtn.addEventListener('click', () => {
       window.location.href = vercelLoginUrl;
     });
 
-    // Leggi token dall'URL hash
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const tokenFromUrl = params.get('access_token');
+    // Controlla se c'è access_token nell'URL
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.replace('#', '?'));
+      const access_token = params.get('access_token');
 
-    if(tokenFromUrl){
-      localStorage.setItem('spotify_access_token', tokenFromUrl);
-      history.replaceState(null,null,'index.html');
-    }
+      if (access_token) {
+        loginBtn.style.display = 'none';
 
-    const accessToken = localStorage.getItem('spotify_access_token');
-
-    if(accessToken){
-      fetch("https://api.spotify.com/v1/me/player/recently-played?limit=50", {
-        headers: { "Authorization": `Bearer ${accessToken}` }
-      })
-      .then(res=>res.json())
-      .then(data=>{
-        if(data.items && data.items.length>0){
-          recentDiv.innerHTML="";
-          data.items.forEach(item=>{
+        fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', {
+          headers: { 'Authorization': 'Bearer ' + access_token }
+        })
+        .then(res => res.json())
+        .then(data => {
+          tracksContainer.innerHTML = '';
+          data.items.forEach(item => {
             const track = item.track;
-            const div=document.createElement('div');
-            div.classList.add('track');
-
-            const cover=document.createElement('img');
-            cover.src=track.album.images[0].url;
-            cover.classList.add('cover');
-
-            const info=document.createElement('div');
-            info.classList.add('info');
-
-            const name=document.createElement('div');
-            name.classList.add('track-name');
-            name.textContent=track.name;
-
-            const artistAlbum=document.createElement('div');
-            artistAlbum.classList.add('artist-album');
-            artistAlbum.textContent=`${track.artists.map(a=>a.name).join(", ")} - ${track.album.name}`;
-
-            info.appendChild(name);
-            info.appendChild(artistAlbum);
-
-            div.appendChild(cover);
-            div.appendChild(info);
-
-            recentDiv.appendChild(div);
+            const trackDiv = document.createElement('div');
+            trackDiv.classList.add('track');
+            trackDiv.innerHTML = `
+              <img src="${track.album.images[0].url}" alt="${track.name}">
+              <div class="track-title">${track.name}</div>
+              <div class="track-artist">${track.artists.map(a => a.name).join(', ')}</div>
+            `;
+            tracksContainer.appendChild(trackDiv);
           });
-        } else recentDiv.innerHTML="<p>Nessun brano trovato.</p>";
-      })
-      .catch(err=>{ console.error(err); recentDiv.innerHTML="<p>Errore nel recuperare i brani.</p>"; });
+        })
+        .catch(err => {
+          tracksContainer.innerHTML = '<p>Errore nel recuperare i brani. Riprova.</p>';
+          console.error(err);
+        });
+      }
     }
   </script>
 </body>
