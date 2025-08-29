@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>AudioLog Callback</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #FFFFFF;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+
+    h1 {
+      color: #1DB954;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>Login Spotify...</h1>
+    <p>Stiamo reindirizzando alla dashboard.</p>
+  </div>
+
+  <script>
+    // Prende il token dall'URL hash (#access_token=...)
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+
+    if(accessToken) {
+      // Salva il token in localStorage
+      localStorage.setItem('spotify_access_token', accessToken);
+
+      // Reindirizza alla pagina principale (index.html)
+      window.location.href = "index.html";
+    } else {
+      // Se non c'è token, mostra errore
+      document.body.innerHTML = "<h1>Errore: token non trovato!</h1>";
+    }
+  </script>
+</body>
+</html>
