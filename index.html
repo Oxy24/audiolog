@@ -2,145 +2,90 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>AudioLog Tracker</title>
+  <title>AudioLog Dashboard</title>
   <style>
-    body {
-      background-color: #121212;
-      color: #FFFFFF;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      text-align: center;
-    }
-
-    .container {
-      text-align: center;
-      background-color: #1E1E1E;
-      padding: 60px 40px;
-      border-radius: 15px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    }
-
-    h1 {
-      color: #1DB954;
-      font-size: 3em;
-      margin-bottom: 40px;
-    }
-
-    #login {
-      background-color: #1DB954;
-      color: #FFFFFF;
-      border: none;
-      padding: 15px 40px;
-      font-size: 1.2em;
-      cursor: pointer;
-      border-radius: 25px;
-      transition: background 0.3s;
-    }
-
-    #login:hover {
-      background-color: #1ed760cc;
-    }
-
-    #recent {
-      margin-top: 40px;
-      text-align: left;
-    }
-
-    #recent div {
-      margin-bottom: 8px;
-    }
+    body { margin:0; font-family:Arial,sans-serif; background:#121212; color:#fff; display:flex; flex-direction:column; align-items:center;}
+    header { background:#1DB954; padding:20px; font-size:2em; font-weight:bold; width:100%; text-align:center;}
+    .container { max-width:900px; margin:30px auto; padding:20px; background:#1E1E1E; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5); width:90%; }
+    #login { background:#1DB954; color:#fff; border:none; padding:15px 30px; font-size:1.2em; border-radius:25px; cursor:pointer; margin-bottom:30px; }
+    #login:hover { background:#1ed760cc; }
+    .track { display:flex; align-items:center; margin-bottom:15px; padding:10px; border-radius:10px; transition:0.2s; }
+    .track:hover { background:#2a2a2a; }
+    .cover { width:64px; height:64px; border-radius:5px; margin-right:15px; }
+    .info { display:flex; flex-direction:column; }
+    .track-name { font-weight:bold; color:#1DB954; }
+    .artist-album { font-size:0.9em; color:#ccc; }
+    @media(max-width:600px){ .track{flex-direction:column; align-items:flex-start;} .cover{margin-bottom:10px;} }
   </style>
 </head>
 <body>
+  <header>AudioLog Dashboard</header>
   <div class="container">
-    <h1>AudioLog Tracker</h1>
     <button id="login">Login con Spotify</button>
-
     <div id="recent"></div>
   </div>
 
   <script>
-    const client_id = "87ae440dcbbb40699c7b76dbda41a9da";
-    const redirect_uri = "https://oxy24.github.io/audiolog/callback.html";
-    const scope = "user-read-recently-played";
-
     const loginButton = document.getElementById('login');
     const recentDiv = document.getElementById('recent');
 
+    const vercelLoginUrl = 'https://audiolog-one.vercel.app/login';
+
     loginButton.addEventListener('click', () => {
-      // Genera code_verifier e code_challenge
-      const code_verifier = generateCodeVerifier();
-      const code_challenge = generateCodeChallenge(code_verifier);
-
-      // Salva code_verifier in localStorage
-      localStorage.setItem('code_verifier', code_verifier);
-
-      // Costruisci l'URL di autorizzazione
-      const auth_url = new URL("https://accounts.spotify.com/authorize");
-      auth_url.searchParams.append("client_id", client_id);
-      auth_url.searchParams.append("response_type", "code");
-      auth_url.searchParams.append("redirect_uri", redirect_uri);
-      auth_url.searchParams.append("scope", scope);
-      auth_url.searchParams.append("code_challenge_method", "S256");
-      auth_url.searchParams.append("code_challenge", code_challenge);
-
-      // Reindirizza l'utente alla pagina di autorizzazione
-      window.location = auth_url.toString();
+      window.location.href = vercelLoginUrl;
     });
 
-    // Funzione per generare code_verifier
-    function generateCodeVerifier() {
-      const array = new Uint8Array(32);
-      window.crypto.getRandomValues(array);
-      return base64UrlEncode(array);
+    // Leggi token dall'URL hash
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const tokenFromUrl = params.get('access_token');
+
+    if(tokenFromUrl){
+      localStorage.setItem('spotify_access_token', tokenFromUrl);
+      history.replaceState(null,null,'index.html');
     }
 
-    // Funzione per generare code_challenge
-    function generateCodeChallenge(code_verifier) {
-      return base64UrlEncode(sha256(code_verifier));
-    }
-
-    // Funzione per calcolare SHA-256
-    function sha256(buffer) {
-      return crypto.subtle.digest("SHA-256", buffer);
-    }
-
-    // Funzione per codificare in Base64 URL-safe
-    function base64UrlEncode(arrayBuffer) {
-      const base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)));
-      return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-    }
-
-    // Se il token è già in localStorage, mostra i brani
     const accessToken = localStorage.getItem('spotify_access_token');
-    if (accessToken) {
-      fetch("https://api.spotify.com/v1/me/player/recently-played?limit=10", {
-        headers: {
-          "Authorization": `Bearer ${accessToken}`
-        }
+
+    if(accessToken){
+      fetch("https://api.spotify.com/v1/me/player/recently-played?limit=50", {
+        headers: { "Authorization": `Bearer ${accessToken}` }
       })
-      .then(res => res.json())
-      .then(data => {
-        if(data.items && data.items.length > 0){
-          recentDiv.innerHTML = "<h2>Ultimi brani ascoltati:</h2>";
-          data.items.forEach(item => {
+      .then(res=>res.json())
+      .then(data=>{
+        if(data.items && data.items.length>0){
+          recentDiv.innerHTML="";
+          data.items.forEach(item=>{
             const track = item.track;
-            const div = document.createElement('div');
-            div.textContent = `${track.name} - ${track.artists.map(a => a.name).join(", ")}`;
+            const div=document.createElement('div');
+            div.classList.add('track');
+
+            const cover=document.createElement('img');
+            cover.src=track.album.images[0].url;
+            cover.classList.add('cover');
+
+            const info=document.createElement('div');
+            info.classList.add('info');
+
+            const name=document.createElement('div');
+            name.classList.add('track-name');
+            name.textContent=track.name;
+
+            const artistAlbum=document.createElement('div');
+            artistAlbum.classList.add('artist-album');
+            artistAlbum.textContent=`${track.artists.map(a=>a.name).join(", ")} - ${track.album.name}`;
+
+            info.appendChild(name);
+            info.appendChild(artistAlbum);
+
+            div.appendChild(cover);
+            div.appendChild(info);
+
             recentDiv.appendChild(div);
           });
-        } else {
-          recentDiv.innerHTML = "<p>Nessun brano trovato.</p>";
-        }
+        } else recentDiv.innerHTML="<p>Nessun brano trovato.</p>";
       })
-      .catch(err => {
-        console.error(err);
-        recentDiv.innerHTML = "<p>Errore nel recuperare i brani.</p>";
-      });
+      .catch(err=>{ console.error(err); recentDiv.innerHTML="<p>Errore nel recuperare i brani.</p>"; });
     }
   </script>
 </body>
