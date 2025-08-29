@@ -28,20 +28,47 @@
   </div>
 
   <script>
-    // Prende il token dall'URL hash (#access_token=...)
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
+    // Prendi il codice di autorizzazione dall'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
 
-    if(accessToken) {
-      // Salva il token in localStorage
-      localStorage.setItem('spotify_access_token', accessToken);
+    if (code) {
+      // Recupera code_verifier da localStorage
+      const code_verifier = localStorage.getItem('code_verifier');
 
-      // Reindirizza alla pagina principale (index.html)
-      window.location.href = "index.html";
+      // Costruisci il corpo della richiesta
+      const body = new URLSearchParams();
+      body.append('grant_type', 'authorization_code');
+      body.append('code', code);
+      body.append('redirect_uri', 'https://oxy24.github.io/audiolog/callback.html');
+      body.append('code_verifier', code_verifier);
+
+      // Invia la richiesta per ottenere l'access token
+      fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        body: body,
+        headers: {
+          'Authorization': 'Basic ' + btoa('87ae440dcbbb40699c7b76dbda41a9da' + ':')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.access_token) {
+          // Salva l'access token in localStorage
+          localStorage.setItem('spotify_access_token', data.access_token);
+          // Reindirizza a index.html
+          window.location.href = 'index.html';
+        } else {
+          document.body.innerHTML = '<h1>Errore: access token non trovato!</h1>';
+        }
+      })
+      .catch(error => {
+        console.error('Errore:', error);
+        document.body.innerHTML = '<h1>Errore durante l\'autenticazione!</h1>';
+      });
     } else {
-      // Se non c'è token, mostra errore
-      document.body.innerHTML = "<h1>Errore: token non trovato!</h1>";
+      document.body.innerHTML = '<h1>Errore: codice di autorizzazione non trovato!</h1>';
     }
   </script>
 </body>
