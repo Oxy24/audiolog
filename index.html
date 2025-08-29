@@ -3,12 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <title>AudioLog Tracker</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background-color: #121212;
+      color: #FFFFFF;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      text-align: center;
+      background-color: #1E1E1E;
+      padding: 60px 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      color: #1DB954;
+      font-size: 3em;
+      margin-bottom: 40px;
+    }
+
+    #login {
+      background-color: #1DB954;
+      color: #FFFFFF;
+      border: none;
+      padding: 15px 40px;
+      font-size: 1.2em;
+      cursor: pointer;
+      border-radius: 25px;
+      transition: background 0.3s;
+    }
+
+    #login:hover {
+      background-color: #1ed760cc;
+    }
+  </style>
 </head>
 <body>
-  <h1>Benvenuto su AudioLog</h1>
-  <button id="login">Login con Spotify</button>
-  <div id="recent"></div>
-  <script src="script.js"></script>
+  <div class="container">
+    <h1>AudioLog Tracker</h1>
+    <button id="login">Login con Spotify</button>
+  </div>
+
+  <script>
+    const loginButton = document.getElementById('login');
+
+    loginButton.addEventListener('click', () => {
+      const client_id = "87ae440dcbbb40699c7b76dbda41a9da";
+      const redirect_uri = "https://oxy24.github.io/audiolog/callback";
+      const scope = "user-read-recently-played";
+      const auth_url = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}`;
+      window.location = auth_url;
+    });
+  </script>
 </body>
 </html>
