@@ -3,14 +3,18 @@ body {
   font-family:Arial,sans-serif;
   background: linear-gradient(135deg,#121212,#1a1a1a);
   color:#fff;
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
   overflow-x:hidden;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
 }
 
 .pre-login{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
   text-align:center;
 }
 
@@ -32,10 +36,10 @@ button{
   transition:0.3s;
   box-shadow:0 5px 20px #1DB95433;
 }
-
 button:hover{background:#1ed760cc;transform:scale(1.05);}
 
-main{padding:20px;max-width:900px;margin:0 auto;display:none;}
+main{padding:20px;max-width:900px;margin:0 auto;}
 section{margin-bottom:35px;}
 .currently-playing,.top-track,.stat-box,.track-item{border-radius:15px;background:#1e1e1e;padding:20px;margin-bottom:15px;}
 .track-item:hover{transform:scale(1.03);box-shadow:0 6px 20px #1DB95433;}
+.stats{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:25px;}
