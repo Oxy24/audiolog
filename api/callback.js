@@ -4,12 +4,11 @@ export default async function handler(req,res){
   try{
     const code = req.query.code;
     const client_id = "87ae440dcbbb40699c7b76dbda41a9da";
-    const client_secret = process.env.CLIENT_SECRET;
     const redirect_uri = "https://audiolog-one.vercel.app/callback.html";
     const code_verifier = req.cookies.code_verifier;
 
-    if(!client_secret || !code_verifier){
-      res.status(500).send("Errore PKCE o client secret mancante");
+    if(!code_verifier){
+      res.status(500).send("Errore PKCE mancante");
       return;
     }
 
@@ -18,7 +17,6 @@ export default async function handler(req,res){
     body.append("code",code);
     body.append("redirect_uri",redirect_uri);
     body.append("client_id",client_id);
-    body.append("client_secret",client_secret);
     body.append("code_verifier",code_verifier);
 
     const tokenRes = await fetch("https://accounts.spotify.com/api/token",{method:"POST",body,headers:{"Content-Type":"application/x-www-form-urlencoded"}});

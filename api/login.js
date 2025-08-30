@@ -5,6 +5,7 @@ export default function handler(req,res){
   const redirect_uri = "https://audiolog-one.vercel.app/callback.html";
   const scope = "user-read-currently-playing user-read-recently-played user-top-read";
 
+  // PKCE code_verifier e code_challenge
   const code_verifier = crypto.randomBytes(64).toString('hex');
   const code_challenge = crypto.createHash('sha256').update(code_verifier).digest('base64url');
 

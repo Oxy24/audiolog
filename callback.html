@@ -6,6 +6,7 @@
 const params = new URLSearchParams(window.location.search);
 const code = params.get('code');
 if(code){
+  // Chiama endpoint serverless che scambia il code con access_token
   window.location.href = `/api/callback?code=${code}`;
 }else{
   document.body.innerHTML="<p style='color:#fff;'>Errore: code non trovato!</p>";

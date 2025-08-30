@@ -59,6 +59,7 @@ const mostPlayedSongSpan = document.querySelector('#most-played-song span');
 
 loginBtn.addEventListener('click', ()=>{window.location.href='/api/login'});
 
+// Dopo il callback, access token è nell'URL hash
 const hash = window.location.hash;
 if(hash.includes('access_token')){
   const params = new URLSearchParams(hash.replace('#','?'));
