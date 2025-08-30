@@ -8,7 +8,7 @@ if(hash.includes('access_token')){
   document.querySelector('.pre-login').style.display='none';
   document.querySelector('main').style.display='block';
 
-  // Currently Playing
+  // ---------------- Currently Playing ----------------
   fetch('https://api.spotify.com/v1/me/player/currently-playing',{
     headers:{'Authorization':'Bearer '+access_token}
   }).then(r=>r.status===204?null:r.json())
@@ -17,13 +17,13 @@ if(hash.includes('access_token')){
       currentTrackDiv.style.display='flex';
       if(data && data.item){
         const t=data.item;
-        currentTrackDiv.innerHTML=`<img src="${t.album.images[0].url}" alt="${t.name}"><div><strong>${t.name}</strong><span>${t.artists.map(a=>a.name).join(', ')}</span></div>`;
+        currentTrackDiv.innerHTML=`<img src="${t.album.images[0].url}" alt="${t.name}" style="width:60px;height:60px;border-radius:10px;margin-right:10px;"><div><strong>${t.name}</strong><span>${t.artists.map(a=>a.name).join(', ')}</span></div>`;
       } else {
         currentTrackDiv.innerHTML=`<span style="color:#b3b3b3;">Nessun brano in riproduzione</span>`;
       }
     });
 
-  // Top Tracks Annuali
+  // ---------------- Top Tracks Annuali ----------------
   fetch('https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50',{
     headers:{'Authorization':'Bearer '+access_token}
   }).then(res=>res.json())
@@ -38,11 +38,11 @@ if(hash.includes('access_token')){
 
       const topTrackDiv = document.getElementById('top-track');
       topTrackDiv.style.display='flex';
-      topTrackDiv.innerHTML = `<img src="${mostPlayedTrack.album.images[0].url}" alt="${mostPlayedTrack.name}"><div><strong>${mostPlayedTrack.name}</strong><span>${mostPlayedTrack.artists.map(a=>a.name).join(', ')}</span></div>`;
+      topTrackDiv.innerHTML = `<img src="${mostPlayedTrack.album.images[0].url}" alt="${mostPlayedTrack.name}" style="width:60px;height:60px;border-radius:10px;margin-right:10px;"><div><strong>${mostPlayedTrack.name}</strong><span>${mostPlayedTrack.artists.map(a=>a.name).join(', ')}</span></div>`;
       document.getElementById('summary-stats').style.display='flex';
     });
 
-  // Top Artists Annuali con foto
+  // ---------------- Top Artists Annuali con foto ----------------
   fetch('https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=10',{
     headers:{'Authorization':'Bearer '+access_token}
   }).then(res=>res.json())
@@ -66,23 +66,36 @@ if(hash.includes('access_token')){
     });
   });
 
-  // Recent Tracks (paginated)
+  // ---------------- Recent Tracks Ricorsivi ----------------
   const tracksList = document.getElementById('tracks-list');
   const loadMoreBtn = document.getElementById('load-more-btn');
-  let after = null, allTracks=[], displayedCount=0;
+  let allTracks=[], displayedCount=0, totalMinutes=0;
 
-  const fetchTracks = ()=>{
+  const fetchTracksRecursive = async (after=null)=>{
     let url = 'https://api.spotify.com/v1/me/player/recently-played?limit=50';
-    if(after) url+='&after='+after;
-    fetch(url,{headers:{'Authorization':'Bearer '+access_token}})
-      .then(res=>res.json())
-      .then(data=>{
-        if(!data.items) return;
-        data.items.forEach(i=>allTracks.push(i.track));
-        renderTracks();
-        after=new Date(data.items[data.items.length-1].played_at).getTime();
-        loadMoreBtn.style.display='block';
-      });
+    if(after) url += '&after=' + after;
+    const res = await fetch(url,{headers:{'Authorization':'Bearer '+access_token}});
+    const data = await res.json();
+    if(!data.items || data.items.length===0) return;
+
+    data.items.forEach(i=>{
+      allTracks.push(i.track);
+      totalMinutes += i.track.duration_ms/60000;
+    });
+
+    // Aggiorna minuti totali stimati
+    document.querySelector('#total-minutes span').textContent = Math.floor(totalMinutes)+' min';
+
+    renderTracks();
+
+    // Se ci sono altri, richiama ricorsivamente il batch successivo
+    const lastTime = new Date(data.items[data.items.length-1].played_at).getTime();
+    if(data.cursors && data.cursors.after){
+      await fetchTracksRecursive(data.cursors.after);
+    } else if (data.items.length === 50){ 
+      // fallback se cursors non presente
+      await fetchTracksRecursive(lastTime);
+    }
   };
 
   const renderTracks = ()=>{
@@ -95,8 +108,11 @@ if(hash.includes('access_token')){
       tracksList.appendChild(li);
     });
     displayedCount+=next.length;
-    if(displayedCount>=allTracks.length) loadMoreBtn.style.display='none';
+    loadMoreBtn.style.display = displayedCount < allTracks.length ? 'block' : 'none';
   };
+
   loadMoreBtn.addEventListener('click',renderTracks);
-  fetchTracks();
+
+  // Avvia la fetch ricorsiva dei recent tracks
+  fetchTracksRecursive();
 }
