@@ -32,43 +32,55 @@ if(hash.includes('access_token')){
         }
       });
 
-    // Top Tracks
-    fetch('https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50',{headers:{'Authorization':'Bearer '+access_token}})
-      .then(res=>res.json())
-      .then(data=>{
-        if(data.items && data.items.length>0){
-          summaryStats.style.display='flex';
-          let totalMinutes=0;
-          data.items.forEach(t=>totalMinutes+=Math.floor(t.duration_ms/60000));
-          totalMinutesSpan.textContent=totalMinutes+" min";
-          totalTracksSpan.textContent=data.items.length;
-          const topTrack=data.items[0];
-          mostPlayedSongSpan.textContent=`${topTrack.name} (${topTrack.artists.map(a=>a.name).join(', ')})`;
-          topTrackDiv.style.display='flex';
-          topTrackDiv.innerHTML=`<img src="${topTrack.album.images[0].url}" alt="${topTrack.name}"><div><strong>${topTrack.name}</strong><span>${topTrack.artists.map(a=>a.name).join(', ')}</span></div>`;
-        }
-      });
+    // Top Tracks annuali (Wrapped)
+    fetch('https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50',{
+      headers:{'Authorization':'Bearer '+access_token}
+    })
+    .then(res=>res.json())
+    .then(data=>{
+      if(!data.items || data.items.length===0) return;
 
-    // Top Artists
-    fetch('https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=10',{headers:{'Authorization':'Bearer '+access_token}})
-      .then(res=>res.json())
-      .then(data=>{
-        if(data.items){
-          topArtistsSection.style.display='block';
-          const artistNames = data.items.map(a=>a.name);
-          const artistValues = data.items.map(a=>a.popularity);
-          new Chart(topArtistsChartCtx,{
-            type:'bar',
-            data:{labels:artistNames,datasets:[{label:'Popolarità',data:artistValues,backgroundColor:'#1DB954',borderRadius:10,maxBarThickness:50}]},
-            options:{
-              indexAxis:'y',
-              scales:{x:{beginAtZero:true,ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}},
-              plugins:{legend:{display:false}},
-              animation:{duration:1200,easing:'easeOutQuart'}
-            }
-          });
+      let totalMinutes=0;
+      data.items.forEach(t=>totalMinutes+=t.duration_ms/60000);
+
+      // Canzone più ascoltata
+      const mostPlayedTrack = data.items[0]; // top track ordinata per Spotify
+      mostPlayedSongSpan.textContent = `${mostPlayedTrack.name} (${mostPlayedTrack.artists.map(a=>a.name).join(', ')})`;
+
+      // Totale minuti
+      totalMinutesSpan.textContent = Math.floor(totalMinutes)+' min';
+
+      // Top Track section
+      topTrackDiv.style.display='flex';
+      topTrackDiv.innerHTML = `<img src="${mostPlayedTrack.album.images[0].url}" alt="${mostPlayedTrack.name}"><div><strong>${mostPlayedTrack.name}</strong><span>${mostPlayedTrack.artists.map(a=>a.name).join(', ')}</span></div>`;
+
+      totalTracksSpan.textContent = data.items.length;
+      summaryStats.style.display='flex';
+    });
+
+    // Top Artists annuali
+    fetch('https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=10',{
+      headers:{'Authorization':'Bearer '+access_token}
+    })
+    .then(res=>res.json())
+    .then(data=>{
+      if(!data.items || data.items.length===0) return;
+
+      const labels = data.items.map(a=>a.name);
+      const values = data.items.map(a=>a.popularity); // proxy ascolti
+      topArtistsSection.style.display='block';
+
+      new Chart(topArtistsChartCtx,{
+        type:'bar',
+        data:{labels:labels,datasets:[{label:'Ascolti',data:values,backgroundColor:'#1DB954',borderRadius:10,maxBarThickness:50}]},
+        options:{
+          indexAxis:'y',
+          scales:{x:{beginAtZero:true,ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}},
+          plugins:{legend:{display:false}},
+          animation:{duration:1200,easing:'easeOutQuart'}
         }
       });
+    });
 
     // Recent Tracks
     let after=null; let allTracks=[]; let displayedCount=0;
