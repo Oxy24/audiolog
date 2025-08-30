@@ -5,10 +5,9 @@
 <script>
 const hash = window.location.hash;
 if(hash){
-  // Rimanda a index.html con l'access token in hash
   window.location.href = '/#' + hash.substring(1);
-} else {
-  document.body.innerHTML = "<p style='color:#fff;'>Errore: access token non trovato!</p>";
+}else{
+  document.body.innerHTML="<p style='color:#fff;'>Errore: access token non trovato!</p>";
 }
 </script>
 </body>
