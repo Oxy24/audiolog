@@ -7,31 +7,27 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<header>
+<div class="pre-login">
   <h1>AudioLog Wrapped 2025</h1>
   <button id="login-btn">Login con Spotify</button>
-</header>
+</div>
 
-<main>
-  <section class="currently-playing" id="current-track" style="display:none;"></section>
-
-  <section class="top-track" id="top-track" style="display:none;"></section>
-
-  <section class="stats" id="summary-stats" style="display:none;">
+<main style="display:none;">
+  <section class="currently-playing" id="current-track"></section>
+  <section class="top-track" id="top-track"></section>
+  <section class="stats" id="summary-stats">
     <div class="stat-box" id="total-minutes"><h3>Minuti Ascoltati</h3><span>0</span></div>
     <div class="stat-box" id="most-played-song"><h3>Canzone più ascoltata</h3><span>—</span></div>
     <div class="stat-box" id="total-tracks"><h3>Brani ascoltati</h3><span>0</span></div>
   </section>
-
-  <section id="top-artists-section" style="display:none;">
+  <section id="top-artists-section">
     <h2>Top 10 Artisti</h2>
     <canvas id="top-artists-chart"></canvas>
   </section>
-
   <section id="recent-tracks-section">
     <h2>Ultimi brani</h2>
     <ul id="tracks-list" class="tracks-list"></ul>
-    <button id="load-more-btn" style="display:none;">Carica altri 10</button>
+    <button id="load-more-btn">Carica altri 10</button>
   </section>
 </main>
 
