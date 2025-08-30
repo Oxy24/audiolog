@@ -29,7 +29,7 @@ button:hover{background:#1ed760cc;}
 <div class="section top-track" id="top-track" style="display:none;"></div>
 
 <div class="section stats" id="summary-stats" style="display:none;">
-  <div class="stat-box" id="total-minutes"><h3>Minuti Ascoltati (stimati)</h3><span>Non disponibili</span></div>
+  <div class="stat-box" id="total-minutes"><h3>Minuti Ascoltati</h3><span>Non disponibili</span></div>
   <div class="stat-box" id="most-played-song"><h3>Canzone Più Ascoltata</h3><span>Non disponibile</span></div>
 </div>
 
@@ -77,7 +77,7 @@ if(hash.includes('access_token')){
         }else{
           currentTrackDiv.innerHTML=`<span style="color:#b3b3b3;">Nessun brano in riproduzione</span>`;
         }
-      }).catch(()=>{currentTrackDiv.style.display='flex'; currentTrackDiv.innerHTML=`<span style="color:#b3b3b3;">Nessun brano in riproduzione</span>`});
+      });
 
     // Top Tracks
     fetch('https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50',{headers:{'Authorization':'Bearer '+access_token}})
@@ -93,7 +93,7 @@ if(hash.includes('access_token')){
           topTrackDiv.style.display='flex';
           topTrackDiv.innerHTML=`<img src="${topTrack.album.images[0].url}" alt="${topTrack.name}"><div><strong>${topTrack.name}</strong><span>${topTrack.artists.map(a=>a.name).join(', ')}</span></div>`;
         }
-      }).catch(()=>{summaryStats.style.display='flex'; totalMinutesSpan.textContent='Non disponibili'; mostPlayedSongSpan.textContent='Non disponibile';});
+      });
 
     // Top Artists
     fetch('https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=10',{headers:{'Authorization':'Bearer '+access_token}})
@@ -103,7 +103,7 @@ if(hash.includes('access_token')){
           topArtistsSection.style.display='block';
           new Chart(topArtistsChartCtx,{type:'bar',data:{labels:data.items.map(a=>a.name),datasets:[{label:'Artisti',data:data.items.map(()=>Math.floor(Math.random()*50)+1),backgroundColor:'#1DB954'}]},options:{scales:{y:{beginAtZero:true}},plugins:{legend:{display:false}}}});
         }
-      }).catch(()=>{topArtistsSection.style.display='none';});
+      });
 
     // Ultimi Brani
     let after=null;
@@ -121,8 +121,7 @@ if(hash.includes('access_token')){
           renderTracks();
           after=new Date(data.items[data.items.length-1].played_at).getTime();
           loadMoreBtn.style.display='block';
-        })
-        .catch(()=>{tracksList.innerHTML='<li style="color:#b3b3b3;">Nessun brano recente disponibile</li>'});
+        });
     };
 
     const renderTracks=()=>{

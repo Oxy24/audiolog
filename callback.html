@@ -3,11 +3,12 @@
 <head><meta charset="UTF-8"><title>Callback</title></head>
 <body>
 <script>
-const hash = window.location.hash;
-if(hash){
-  window.location.href = '/#' + hash.substring(1);
+const params = new URLSearchParams(window.location.search);
+const code = params.get('code');
+if(code){
+  window.location.href = `/api/callback?code=${code}`;
 }else{
-  document.body.innerHTML="<p style='color:#fff;'>Errore: access token non trovato!</p>";
+  document.body.innerHTML="<p style='color:#fff;'>Errore: code non trovato!</p>";
 }
 </script>
 </body>
