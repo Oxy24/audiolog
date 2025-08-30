@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AudioLog Wrapped - Top Tracks</title>
+<title>AudioLog Wrapped</title>
 <style>
 body {margin:0;font-family:Arial,sans-serif;background:#121212;color:#fff;padding:20px;}
 h1,h2{color:#1DB954;margin-bottom:15px;}
@@ -28,7 +28,7 @@ button:hover{background:#1ed760cc;}
 <div class="section currently-playing" id="current-track" style="display:none;"></div>
 
 <div class="section stats" id="summary-stats" style="display:none;">
-  <div class="stat-box" id="total-minutes"><h3>Minuti Ascoltati</h3><span>0</span></div>
+  <div class="stat-box" id="total-minutes"><h3>Minuti Ascoltati (stimati)</h3><span>0</span></div>
   <div class="stat-box" id="most-played-song"><h3>Canzone Più Ascoltata</h3><span>–</span></div>
 </div>
 
@@ -45,113 +45,119 @@ button:hover{background:#1ed760cc;}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const loginBtn=document.getElementById('login-btn');
-const tracksList=document.getElementById('tracks-list');
-const loadMoreBtn=document.getElementById('load-more-btn');
-const currentTrackDiv=document.getElementById('current-track');
-const topArtistsSection=document.getElementById('top-artists-section');
-const topArtistsChartCtx=document.getElementById('top-artists-chart').getContext('2d');
-const summaryStats=document.getElementById('summary-stats');
-const totalMinutesSpan=document.querySelector('#total-minutes span');
-const mostPlayedSongSpan=document.querySelector('#most-played-song span');
+const loginBtn = document.getElementById('login-btn');
+const tracksList = document.getElementById('tracks-list');
+const loadMoreBtn = document.getElementById('load-more-btn');
+const currentTrackDiv = document.getElementById('current-track');
+const topArtistsSection = document.getElementById('top-artists-section');
+const topArtistsChartCtx = document.getElementById('top-artists-chart').getContext('2d');
+const summaryStats = document.getElementById('summary-stats');
+const totalMinutesSpan = document.querySelector('#total-minutes span');
+const mostPlayedSongSpan = document.querySelector('#most-played-song span');
 
-const vercelLoginUrl='https://audiolog-one.vercel.app/api/login';
-loginBtn.addEventListener('click',()=>{window.location.href=vercelLoginUrl;});
+const vercelLoginUrl = 'https://audiolog-one.vercel.app/api/login';
+loginBtn.addEventListener('click', () => { window.location.href = vercelLoginUrl; });
 
-const hash=window.location.hash;
-if(hash.includes('access_token')){
-  const params=new URLSearchParams(hash.replace('#','?'));
-  const access_token=params.get('access_token');
-  if(access_token){
-    loginBtn.style.display='none';
+const hash = window.location.hash;
+if (hash.includes('access_token')) {
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  const access_token = params.get('access_token');
+  if (access_token) {
+    loginBtn.style.display = 'none';
 
     // Currently Playing
-    fetch('https://api.spotify.com/v1/me/player/currently-playing',{
-      headers:{'Authorization':'Bearer '+access_token}
+    fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+      headers: { 'Authorization': 'Bearer ' + access_token }
     })
-    .then(res=>res.json())
-    .then(data=>{
-      if(data && data.item){
-        currentTrackDiv.style.display='flex';
-        const track=data.item;
-        currentTrackDiv.innerHTML=`
+    .then(res => {
+      if (res.status === 204) return null;
+      return res.json();
+    })
+    .then(data => {
+      currentTrackDiv.style.display = 'flex';
+      if (data && data.item) {
+        const track = data.item;
+        currentTrackDiv.innerHTML = `
           <img src="${track.album.images[0].url}" alt="${track.name}">
           <div>
             <strong>${track.name}</strong>
-            <span>${track.artists.map(a=>a.name).join(', ')}</span>
+            <span>${track.artists.map(a => a.name).join(', ')}</span>
             <span style="font-size:0.8em;color:#b3b3b3;">${track.album.name}</span>
           </div>
         `;
-      }
-    }).catch(()=>console.log('Nessun brano attualmente in riproduzione.'));
-
-    // Funzione per Top Tracks e Top Artists (long_term)
-    fetch('https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50',{
-      headers:{'Authorization':'Bearer '+access_token}
-    })
-    .then(res=>res.json())
-    .then(data=>{
-      if(data.items){
-        summaryStats.style.display='flex';
-        let totalMinutes=0;
-        let mostPlayedTrack=data.items[0];
-        data.items.forEach(t=>totalMinutes+=Math.floor(t.duration_ms/60000));
-        totalMinutesSpan.textContent=totalMinutes;
-        mostPlayedSongSpan.textContent=`${mostPlayedTrack.name} (${mostPlayedTrack.artists.map(a=>a.name).join(', ')})`;
+      } else {
+        currentTrackDiv.innerHTML = `<span style="color:#b3b3b3;">Nessun brano in riproduzione</span>`;
       }
     });
 
-    fetch('https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=10',{
-      headers:{'Authorization':'Bearer '+access_token}
+    // Top Tracks per minuti stimati e canzone più ascoltata
+    fetch('https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50', {
+      headers: { 'Authorization': 'Bearer ' + access_token }
     })
-    .then(res=>res.json())
-    .then(data=>{
-      if(data.items){
-        topArtistsSection.style.display='block';
-        new Chart(topArtistsChartCtx,{
-          type:'bar',
-          data:{
-            labels:data.items.map(a=>a.name),
-            datasets:[{label:'Numero di brani', data:data.items.map(()=>Math.floor(Math.random()*50)+1), backgroundColor:'#1DB954'}] // Nota: Spotify non fornisce count esatto
+    .then(res => res.json())
+    .then(data => {
+      if (data.items && data.items.length > 0) {
+        summaryStats.style.display = 'flex';
+        let totalMinutes = 0;
+        data.items.forEach(t => totalMinutes += Math.floor(t.duration_ms / 60000));
+        totalMinutesSpan.textContent = totalMinutes;
+        const topTrack = data.items[0];
+        mostPlayedSongSpan.textContent = `${topTrack.name} (${topTrack.artists.map(a => a.name).join(', ')})`;
+      }
+    });
+
+    // Top Artists
+    fetch('https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=10', {
+      headers: { 'Authorization': 'Bearer ' + access_token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.items) {
+        topArtistsSection.style.display = 'block';
+        new Chart(topArtistsChartCtx, {
+          type: 'bar',
+          data: {
+            labels: data.items.map(a => a.name),
+            datasets: [{ label: 'Artisti', data: data.items.map(() => Math.floor(Math.random() * 50) + 1), backgroundColor: '#1DB954' }]
           },
-          options:{scales:{y:{beginAtZero:true}},plugins:{legend:{display:false}}}
+          options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
         });
       }
     });
 
     // Ultimi brani
-    let after=null;
-    let allTracks=[];
-    let displayedCount=0;
+    let after = null;
+    let allTracks = [];
+    let displayedCount = 0;
 
-    const fetchTracks=()=>{
-      let url='https://api.spotify.com/v1/me/player/recently-played?limit=50';
-      if(after) url+='&after='+after;
-      fetch(url,{headers:{'Authorization':'Bearer '+access_token}})
-      .then(res=>res.json())
-      .then(data=>{
-        if(!data.items || data.items.length===0) return;
-        data.items.forEach(item=>allTracks.push(item.track));
-        renderTracks();
-        after=new Date(data.items[data.items.length-1].played_at).getTime();
-        loadMoreBtn.style.display='block';
-      });
+    const fetchTracks = () => {
+      let url = 'https://api.spotify.com/v1/me/player/recently-played?limit=50';
+      if (after) url += '&after=' + after;
+      fetch(url, { headers: { 'Authorization': 'Bearer ' + access_token } })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.items || data.items.length === 0) return;
+          data.items.forEach(item => allTracks.push(item.track));
+          renderTracks();
+          after = new Date(data.items[data.items.length - 1].played_at).getTime();
+          loadMoreBtn.style.display = 'block';
+        });
     };
 
-    const renderTracks=()=>{
-      const nextTracks=allTracks.slice(displayedCount, displayedCount+10);
-      nextTracks.forEach(track=>{
-        const li=document.createElement('li');
+    const renderTracks = () => {
+      const nextTracks = allTracks.slice(displayedCount, displayedCount + 10);
+      nextTracks.forEach(track => {
+        const li = document.createElement('li');
         li.classList.add('track-item');
-        li.innerHTML=`<div class="track-title">${track.name}</div>
-                        <div class="track-artist">${track.artists.map(a=>a.name).join(', ')}</div>`;
+        li.innerHTML = `<div class="track-title">${track.name}</div>
+                        <div class="track-artist">${track.artists.map(a => a.name).join(', ')}</div>`;
         tracksList.appendChild(li);
       });
-      displayedCount+=nextTracks.length;
-      if(displayedCount>=allTracks.length) loadMoreBtn.style.display='none';
+      displayedCount += nextTracks.length;
+      if (displayedCount >= allTracks.length) loadMoreBtn.style.display = 'none';
     };
 
-    loadMoreBtn.addEventListener('click',renderTracks);
+    loadMoreBtn.addEventListener('click', renderTracks);
     fetchTracks();
   }
 }
