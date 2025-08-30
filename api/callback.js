@@ -1,34 +1,42 @@
 import fetch from "node-fetch";
 
-export default async function handler(req,res){
-  try{
+export default async function handler(req, res) {
+  try {
     const code = req.query.code;
     const client_id = "87ae440dcbbb40699c7b76dbda41a9da";
-    const redirect_uri = "https://audiolog-one.vercel.app/callback.html";
-    const code_verifier = req.cookies.code_verifier;
+    const client_secret = process.env.CLIENT_SECRET;
+    const redirect_uri = "https://audiolog-one.vercel.app/api/callback";
 
-    if(!code_verifier){
-      res.status(500).send("Errore PKCE mancante");
+    if (!client_secret) {
+      res.status(500).send("Errore: CLIENT_SECRET non impostato");
       return;
     }
 
     const body = new URLSearchParams();
-    body.append("grant_type","authorization_code");
-    body.append("code",code);
-    body.append("redirect_uri",redirect_uri);
-    body.append("client_id",client_id);
-    body.append("code_verifier",code_verifier);
+    body.append("grant_type", "authorization_code");
+    body.append("code", code);
+    body.append("redirect_uri", redirect_uri);
 
-    const tokenRes = await fetch("https://accounts.spotify.com/api/token",{method:"POST",body,headers:{"Content-Type":"application/x-www-form-urlencoded"}});
-    const data = await tokenRes.json();
+    const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      body: body,
+      headers: {
+        Authorization: "Basic " + Buffer.from(client_id + ":" + client_secret).toString("base64"),
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    });
 
-    if(data.access_token){
-      res.writeHead(302,{Location:`/index.html#access_token=${data.access_token}`});
+    const data = await tokenResponse.json();
+
+    if (data.access_token) {
+      res.writeHead(302, {
+        Location: `https://audiolog-one.vercel.app/#access_token=${data.access_token}`
+      });
       res.end();
-    }else{
-      res.status(500).send("Errore: token non ottenuto");
+    } else {
+      res.status(500).send("Errore: token non trovato!");
     }
-  }catch(err){
+  } catch (err) {
     console.error(err);
     res.status(500).send("Errore interno del server");
   }

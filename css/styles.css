@@ -19,27 +19,48 @@ body {
 }
 
 .pre-login h1{
-  font-size:3em;
+  font-size:2.8em;
   color:#1DB954;
   text-shadow:0 0 10px #1DB95466;
-  margin-bottom:40px;
+  margin-bottom:30px;
 }
 
 button{
   background:#1DB954;
   border:none;
   color:#fff;
-  padding:15px 40px;
+  padding:12px 35px;
   border-radius:50px;
   cursor:pointer;
-  font-size:1.3em;
+  font-size:1.2em;
   transition:0.3s;
   box-shadow:0 5px 20px #1DB95433;
 }
 button:hover{background:#1ed760cc;transform:scale(1.05);}
 
 main{padding:20px;max-width:900px;margin:0 auto;}
-section{margin-bottom:35px;}
-.currently-playing,.top-track,.stat-box,.track-item{border-radius:15px;background:#1e1e1e;padding:20px;margin-bottom:15px;}
-.track-item:hover{transform:scale(1.03);box-shadow:0 6px 20px #1DB95433;}
-.stats{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:25px;}
+section{margin-bottom:30px;}
+.currently-playing,.top-track,.stat-box,.track-item{
+  border-radius:15px;
+  background:#1e1e1e;
+  padding:15px;
+  margin-bottom:15px;
+}
+.track-item:hover{
+  transform:scale(1.02);
+  box-shadow:0 6px 20px #1DB95433;
+  transition:0.2s;
+}
+.stats{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:25px;}
+.stat-box{flex:1;min-width:150px;}
+.stat-box p.note{font-size:0.7em;color:#b3b3b3;margin-top:3px;}
+.track-item img, .top-track img, .currently-playing img{
+  width:60px;
+  height:60px;
+  border-radius:10px;
+  object-fit:cover;
+  margin-right:15px;
+}
+.track-item div{display:inline-block;vertical-align:top;max-width:calc(100% - 75px);}
+.track-title{font-weight:bold;font-size:0.9em;}
+.track-artist{font-size:0.8em;color:#b3b3b3;}
