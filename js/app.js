@@ -42,22 +42,29 @@ if(hash.includes('access_token')){
       document.getElementById('summary-stats').style.display='flex';
     });
 
-  // Top Artists Annuali
+  // Top Artists Annuali con foto
   fetch('https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=10',{
     headers:{'Authorization':'Bearer '+access_token}
   }).then(res=>res.json())
-    .then(data=>{
-      if(!data.items) return;
-      const labels = data.items.map(a=>a.name);
-      const values = data.items.map(a=>a.popularity);
-      document.getElementById('top-artists-section').style.display='block';
-      const ctx = document.getElementById('top-artists-chart').getContext('2d');
-      new Chart(ctx,{
-        type:'bar',
-        data:{labels, datasets:[{label:'Ascolti',data:values,backgroundColor:'#1DB954',borderRadius:10,maxBarThickness:50}]},
-        options:{indexAxis:'y', scales:{x:{beginAtZero:true,ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}},plugins:{legend:{display:false}},animation:{duration:1200,easing:'easeOutQuart'}}
-      });
+  .then(data=>{
+    if(!data.items) return;
+    const section = document.getElementById('top-artists-section');
+    section.style.display='block';
+    section.innerHTML='<h2>Top 10 Artisti</h2><div class="artists-list"></div>';
+    const container = section.querySelector('.artists-list');
+    
+    data.items.forEach((artist,i)=>{
+      const div = document.createElement('div');
+      div.classList.add('artist-item');
+      div.style.flex='0 0 100px';
+      div.style.textAlign='center';
+      div.style.opacity='0';
+      div.style.animation=`fadeInUp 0.4s forwards`;
+      div.style.animationDelay=`${i*0.05}s`;
+      div.innerHTML = `<img src="${artist.images[0]?.url||artist.images[1]?.url}" alt="${artist.name}"><p>${artist.name}</p>`;
+      container.appendChild(div);
     });
+  });
 
   // Recent Tracks (paginated)
   const tracksList = document.getElementById('tracks-list');
